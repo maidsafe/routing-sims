@@ -1,0 +1,13 @@
+branches:
+  only:
+    - master
+os:
+  - linux
+language: rust
+rust:
+  - nightly
+sudo: false
+cache:
+  cargo: true
+script:
+  - RUST_BACKTRACE=1 cargo test

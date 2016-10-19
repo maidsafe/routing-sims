@@ -4,6 +4,13 @@
 
 Code to simulate the security of routing Quorums under various conditions.
 
+|Linux|Issues|
+|:---:|:----:|
+|[![Build Status](https://travis-ci.org/maidsafe/routing_sims.svg?branch=master)](https://travis-ci.org/maidsafe/routing_sims)|[![Stories in Ready](https://badge.waffle.io/maidsafe/routing_sims.png?label=ready&title=Ready)](https://waffle.io/maidsafe/routing_sims)|
+
+| [MaidSafe website](http://maidsafe.net) | [SAFE Network Forum](https://forum.safenetwork.io) |
+|:------:|:-------:|
+
 ## Random allocation
 
 This example assumes a specified number of malicious nodes join the network but
