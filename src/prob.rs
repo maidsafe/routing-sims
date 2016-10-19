@@ -46,7 +46,7 @@ fn test_choose() {
 
 /// Calculate the probability of choosing at least `q` "red" nodes, where there
 /// are `n` total nodes, `r` red, and we choose `k`.
-pub fn probQRChosen(n: NN, r: NN, k: NN, q: NN) -> RR {
+pub fn prob_compromise(n: NN, r: NN, k: NN, q: NN) -> RR {
     assert!(n >= r);
     assert!(n - r >= k - q,
             "expected n-r >= k-q; found {} < {}",
@@ -135,11 +135,21 @@ impl SimTool for DirectCalcTool {
         self.any_group = any;
     }
 
+    fn print_message(&self) {
+        if self.any_group {
+            println!("Tool: calculate the expected number of compromised groups, \
+                assuming all groups have min size");
+        } else {
+            println!("Tool: calculate the probability of one specific group (of \
+            min size) being compromised");
+        }
+    }
+
     fn calc_p_compromise(&self) -> RR {
-        let p = probQRChosen(self.num_nodes,
-                             self.num_malicious,
-                             self.min_group_size,
-                             self.quorum);
+        let p = prob_compromise(self.num_nodes,
+                                self.num_malicious,
+                                self.min_group_size,
+                                self.quorum);
         if self.any_group {
             p * ((self.num_nodes as RR) / (self.num_malicious as RR))
         } else {
