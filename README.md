@@ -1,7 +1,5 @@
 # Routing simulations
 
-**Maintainer:** Diggory Hardy
-
 Code to simulate the security of routing Quorums under various conditions.
 
 |Linux|Issues|
