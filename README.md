@@ -1,5 +1,7 @@
 # Routing simulations
 
+**Maintainer:** Andreas Fackler (andreas.fackler@maidsafe.net)
+
 Code to simulate the security of routing Quorums under various conditions.
 
 |Linux|Issues|
