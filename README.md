@@ -4,7 +4,7 @@ Code to simulate the security of routing Quorums under various conditions.
 
 |Linux|Issues|
 |:---:|:----:|
-|[![Build Status](https://travis-ci.org/maidsafe/routing_sims.svg?branch=master)](https://travis-ci.org/maidsafe/routing_sims)|[![Stories in Ready](https://badge.waffle.io/maidsafe/routing_sims.png?label=ready&title=Ready)](https://waffle.io/maidsafe/routing_sims)|
+|[![Build Status](https://travis-ci.com/maidsafe/routing_sims.svg?branch=master)](https://travis-ci.com/maidsafe/routing_sims)|[![Stories in Ready](https://badge.waffle.io/maidsafe/routing_sims.png?label=ready&title=Ready)](https://waffle.io/maidsafe/routing_sims)|
 
 | [MaidSafe website](https://maidsafe.net) | [SAFE Dev Forum](https://forum.safedev.org) | [SAFE Network Forum](https://safenetforum.org) |
 |:------:|:-------:|:-------:|
