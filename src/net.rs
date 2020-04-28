@@ -111,7 +111,7 @@ impl Network {
     /// Note: if a node has done proof-of-work but its original target group splits, it
     /// simply joins whichever group it would now be in. If a node has done proof of work and
     /// is not accepted due to age restrictions, it is given a new name and must redo work.
-    pub fn do_step<AR: AddRestriction>(&mut self, args: &ToolArgs, attack: &mut AttackStrategy) {
+    pub fn do_step<AR: AddRestriction>(&mut self, args: &ToolArgs, attack: &mut dyn AttackStrategy) {
         self.to_join += args.max_join_rate;
         self.p_leave += args.leave_rate_good;
 
@@ -218,7 +218,7 @@ impl Network {
                                         node_data: NodeData)
                                         -> Result<Prefix, NodeData> {
         let prefix = self.find_prefix(node_name);
-        let mut group = self.groups.get_mut(&prefix).expect("network must include all groups");
+        let group = self.groups.get_mut(&prefix).expect("network must include all groups");
         if group.len() > self.min_group_size && !AR::can_add(&node_data, group) {
             return Err(node_data);
         }
@@ -286,7 +286,7 @@ impl Network {
     pub fn maybe_split(&mut self,
                        prefix: Prefix,
                        name: NodeName,
-                       attack: &mut AttackStrategy)
+                       attack: &mut dyn AttackStrategy)
                        -> Prefix {
         if !self.need_split(prefix) {
             return prefix;
@@ -310,7 +310,7 @@ impl Network {
     }
 
     /// Do a split. Return prefixes of new groups.
-    pub fn do_split(&mut self, prefix: Prefix, attack: &mut AttackStrategy) -> (Prefix, Prefix) {
+    pub fn do_split(&mut self, prefix: Prefix, attack: &mut dyn AttackStrategy) -> (Prefix, Prefix) {
         let old_group = match self.groups.remove(&prefix) {
             Some(g) => g,
             None => {
@@ -351,7 +351,7 @@ impl Network {
     /// On relocation, the node is returned (with its old name); the driver should
     /// create a new name and call add_node with the new name.
     pub fn churn(&mut self, prefix: Prefix, new_node: NodeName) -> Option<(NodeName, NodeData)> {
-        let mut group = self.groups.get_mut(&prefix).expect("churn called with invalid group");
+        let group = self.groups.get_mut(&prefix).expect("churn called with invalid group");
         // Increment churn counters and see if any is ready to be relocated.
         let mut to_relocate: Option<(NodeName, u32)> = None;
         for (node_name, ref mut node_data) in group.iter_mut() {

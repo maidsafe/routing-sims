@@ -595,7 +595,7 @@ impl SimParams {
         let args = ToolArgs::from_params(self);
 
         let result = {
-            let tool: Box<Tool> = match self.sim_type {
+            let tool: Box<dyn Tool> = match self.sim_type {
                 SimType::DirectCalc => Box::new(DirectCalcTool::new(&args)),
                 SimType::Structure => Box::new(SimStructureTool::new(&args)),
                 SimType::FullSim => {
