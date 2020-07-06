@@ -1,7 +1,7 @@
 # PR workflow.
 #
 # Gather code coverage stats and publish them on coveralls.io.
-# Runs cargo test.
+# Run cargo test.
 
 name: PR
 
@@ -20,7 +20,8 @@ jobs:
     name: Code Coverage check and Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+      # Install Rust
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
@@ -28,26 +29,18 @@ jobs:
           override: true
 
       # Generate Cargo.lock, needed for the cache.
-      - uses: actions-rs/cargo@v1
-        with:
-          command: generate-lockfile
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
 
       # Cache.
-      - name: Cache cargo registry
-        uses: actions/cache@v1
+      - name: Cargo cache registry, index and build
+        uses: actions/cache@v2
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache cargo index
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-      - name: Cache cargo build
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-cache-${{ hashFiles('**/Cargo.lock') }}
 
       # Run cargo tarpaulin & push result to coveralls.io
       - name: rust-tarpaulin code coverage check
@@ -68,6 +61,4 @@ jobs:
 
       # Run tests.
       - name: Cargo Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
