@@ -154,7 +154,7 @@ pub struct ArgProc {}
 impl ArgProc {
     /// Return (repetitions, vec[sim params])
     pub fn make_sim_params() -> (u32, Vec<SimParams>) {
-        let matches = clap_app!(routing_sims =>
+        let matches = clap_app!(sn_routing_sims =>
             (version: "0.1")
             (about: "Calculates vulnerabilities of networks via simulation.\
                     \n\n\
