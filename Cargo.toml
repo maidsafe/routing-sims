@@ -1,6 +1,6 @@
 [package]
 authors = ["Diggory Hardy <git@dhardy.name>"]
-name = "routing-sims"
+name = "sn_routing_sims"
 version = "0.1.0"
 
 [dependencies]
