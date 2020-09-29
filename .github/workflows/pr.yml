@@ -5,8 +5,7 @@
 
 name: PR
 
-on:
-  pull_request:
+on: pull_request
 
 env:
   # Run all cargo commands with --verbose.
@@ -16,7 +15,8 @@ env:
   RUSTFLAGS: "-D warnings"
 
 jobs:
-  name: Rustfmt
+  checks:
+    name: Rustfmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
