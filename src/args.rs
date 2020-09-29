@@ -9,17 +9,16 @@
 
 //! Argument processing
 
-use std::str::FromStr;
+use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::ops::AddAssign;
-use std::cmp::Ordering;
 use std::process;
+use std::str::FromStr;
 
+use attack::{SimpleTargettedAttack, UntargettedAttack};
+use quorum::{AgeQuorum, SimpleQuorum};
+use tools::{DirectCalcTool, FullSimTool, SimResult, SimStructureTool, Tool};
 use {ToolArgs, NN, RR};
-use tools::{Tool, DirectCalcTool, SimStructureTool, FullSimTool, SimResult};
-use quorum::{SimpleQuorum, AgeQuorum};
-use attack::{UntargettedAttack, SimpleTargettedAttack};
-
 
 pub trait DefaultStep<T> {
     // Return a default step.
@@ -58,9 +57,10 @@ impl<T: Copy + Debug + AddAssign + PartialOrd<T> + DefaultStep<T>> SamplePoints<
 }
 
 impl<T: FromStr> FromStr for SamplePoints<T>
-    where <T as FromStr>::Err: Debug
+where
+    <T as FromStr>::Err: Debug,
 {
-    type Err = ();  // we just panic!
+    type Err = (); // we just panic!
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.contains('-') {
             // We have a range; check for a step:
@@ -78,11 +78,11 @@ impl<T: FromStr> FromStr for SamplePoints<T>
             let mut parts = first.split('-');
             let start = parts.next().expect("split half").parse().expect("parse");
             let stop = match parts.next() {
-                    Some(part) => part,
-                    None => panic!("expected 'start-stop:step', found {}", s),
-                }
-                .parse()
-                .expect("parse");
+                Some(part) => part,
+                None => panic!("expected 'start-stop:step', found {}", s),
+            }
+            .parse()
+            .expect("parse");
             if parts.next() != None {
                 panic!("expected 'start-stop:step', found {}", s);
             }
@@ -90,7 +90,9 @@ impl<T: FromStr> FromStr for SamplePoints<T>
         } else if s.contains(',') {
             // We have a list
             let parts = s.split(',');
-            Ok(SamplePoints::List(parts.map(|p| p.parse().expect("parse")).collect()))
+            Ok(SamplePoints::List(
+                parts.map(|p| p.parse().expect("parse")).collect(),
+            ))
         } else {
             // Presumably we have a single number
             Ok(SamplePoints::Number(s.parse().expect("parse")))
@@ -105,28 +107,26 @@ struct SamplePointsIterator<'a, T: Copy + Debug + AddAssign + PartialOrd<T> + De
 }
 
 impl<'a, T: Copy + Debug + AddAssign + PartialOrd<T> + DefaultStep<T> + 'a> Iterator
-        for SamplePointsIterator<'a, T>
+    for SamplePointsIterator<'a, T>
 {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         let i = self.i;
         match self.iterable {
-            &SamplePoints::Range(start, stop, step) => {
-                match self.prev {
-                    None => {
-                        self.prev = Some(start);
-                        self.prev
-                    },
-                    Some(mut x) => {
-                        let step = step.unwrap_or(T::default_step(start));
-                        x += step;
-                        self.prev = Some(x);
-                        if x > stop {
-                            None
-                        } else {
-                            Some(x)
-                        }
-                    },
+            &SamplePoints::Range(start, stop, step) => match self.prev {
+                None => {
+                    self.prev = Some(start);
+                    self.prev
+                }
+                Some(mut x) => {
+                    let step = step.unwrap_or(T::default_step(start));
+                    x += step;
+                    self.prev = Some(x);
+                    if x > stop {
+                        None
+                    } else {
+                        Some(x)
+                    }
                 }
             },
             &SamplePoints::List(ref v) => {
@@ -136,7 +136,7 @@ impl<'a, T: Copy + Debug + AddAssign + PartialOrd<T> + DefaultStep<T> + 'a> Iter
                     self.i = i + 1;
                     Some(v[i])
                 }
-            },
+            }
             &SamplePoints::Number(n) => {
                 if i > 0 {
                     None
@@ -144,7 +144,7 @@ impl<'a, T: Copy + Debug + AddAssign + PartialOrd<T> + DefaultStep<T> + 'a> Iter
                     self.i = 1;
                     Some(n)
                 }
-            },
+            }
         }
     }
 }
@@ -197,7 +197,7 @@ impl ArgProc {
             (@arg strategy: -S --strategy "Attack targetting strategy: 'none', \
                     'simple' (naive) targetting, 'all'")
         )
-            .get_matches();
+        .get_matches();
 
         // Create initial parameter set
         let tool = match matches.value_of("tool").unwrap_or("full") {
@@ -212,14 +212,17 @@ impl ArgProc {
             println!("");
             match tool {
                 SimType::DirectCalc => {
-                    println!("\
+                    println!(
+                        "\
 This is the simplest tool: it assumes that all groups have minimum size and
 cannot simulate targeting or ageing. It does not simulate a network but
 directly calculates the outcome (much faster and more precise, but limited and
-may not be accurate to all assumptions).");
+may not be accurate to all assumptions)."
+                    );
                 }
                 SimType::Structure => {
-                    println!("\
+                    println!(
+                        "\
 This is a compromise between direct calculation and network simulations: it
 simulates an initial network, then calculates the probabilities of disruction
 and of compromise assuming random distribution of malicious nodes within this
@@ -239,10 +242,12 @@ move nodes based on age, however the result should not be any different than
 a few more nodes leaving and rejoining.
 
 Results may be over-precise since they do not take network variances into
-account.");
+account."
+                    );
                 }
                 SimType::FullSim => {
-                    println!("\
+                    println!(
+                        "\
 Simulations network creation and an attack in two phases.
 
 The simulation is divided into two phases: firstly an initial network of good
@@ -274,49 +279,63 @@ disruption.
 
 Assumption: all nodes (malicious or not) have the same performance and take the
 same time to complete proof-of-work.
-                    ");
+                    "
+                    );
                 }
             }
             process::exit(0);
         }
 
-        let nodes_range: SamplePoints<NN> = matches.value_of("nodes")
+        let nodes_range: SamplePoints<NN> = matches
+            .value_of("nodes")
             .map_or(SamplePoints::Number(1000), |s| s.parse().expect("parse"));
         let mut nodes_iter = nodes_range.iter();
 
-        let at_nodes_range: SamplePoints<RelOrAbs<NN>> = matches.value_of("attacking")
-            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.1)),
-                    |s| s.parse().expect("parse"));
+        let at_nodes_range: SamplePoints<RelOrAbs<NN>> = matches
+            .value_of("attacking")
+            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.1)), |s| {
+                s.parse().expect("parse")
+            });
         let mut at_nodes_iter = at_nodes_range.iter();
 
-        let max_join_range: SamplePoints<RelOrAbs<RR>> = matches.value_of("maxjoin")
-            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.02)),
-                    |s| s.parse().expect("parse"));
+        let max_join_range: SamplePoints<RelOrAbs<RR>> = matches
+            .value_of("maxjoin")
+            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.02)), |s| {
+                s.parse().expect("parse")
+            });
         let mut max_join_iter = max_join_range.iter();
 
-        let add_good_range: SamplePoints<RelOrAbs<RR>> = matches.value_of("backjoin")
-            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.001)),
-                    |s| s.parse().expect("parse"));
+        let add_good_range: SamplePoints<RelOrAbs<RR>> = matches
+            .value_of("backjoin")
+            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.001)), |s| {
+                s.parse().expect("parse")
+            });
         let mut add_good_iter = add_good_range.iter();
 
-        let leave_good_range: SamplePoints<RelOrAbs<RR>> = matches.value_of("leavegood")
-            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.001)),
-                    |s| s.parse().expect("parse"));
+        let leave_good_range: SamplePoints<RelOrAbs<RR>> = matches
+            .value_of("leavegood")
+            .map_or(SamplePoints::Number(RelOrAbs::Rel(0.001)), |s| {
+                s.parse().expect("parse")
+            });
         let mut leave_good_iter = leave_good_range.iter();
 
-        let group_size_range: SamplePoints<NN> = matches.value_of("group")
+        let group_size_range: SamplePoints<NN> = matches
+            .value_of("group")
             .map_or(SamplePoints::Number(10), |s| s.parse().expect("parse"));
         let mut group_size_iter = group_size_range.iter();
 
-        let quorum_range = matches.value_of("quorum")
+        let quorum_range = matches
+            .value_of("quorum")
             .map_or(SamplePoints::Number(0.5), |s| s.parse().expect("parse"));
         let mut quorum_iter = quorum_range.iter();
 
-        let proof_time_range: SamplePoints<RR> = matches.value_of("prooftime")
+        let proof_time_range: SamplePoints<RR> = matches
+            .value_of("prooftime")
             .map_or(SamplePoints::Number(1.0), |s| s.parse().expect("parse"));
         let mut proof_time_iter = proof_time_range.iter();
 
-        let max_days_range: SamplePoints<RR> = matches.value_of("maxdays")
+        let max_days_range: SamplePoints<RR> = matches
+            .value_of("maxdays")
             .map_or(SamplePoints::Number(100.0), |s| s.parse().expect("parse"));
         let mut max_days_iter = max_days_range.iter();
 
@@ -339,19 +358,19 @@ same time to complete proof-of-work.
         let mut at_type_iter = at_type.iter();
 
         let mut v = vec![SimParams {
-                             sim_type: tool,
-                             num_initial: nodes_iter.next().expect("first iter item"),
-                             num_attacking: at_nodes_iter.next().expect("first iter item"),
-                             max_join: max_join_iter.next().expect("first iter item"),
-                             add_good: add_good_iter.next().expect("first iter item"),
-                             leave_good: leave_good_iter.next().expect("first iter item"),
-                             min_group_size: group_size_iter.next().expect("first iter item"),
-                             quorum_prop: quorum_iter.next().expect("first iter item"),
-                             proof_time: proof_time_iter.next().expect("first iter item"),
-                             max_days: max_days_iter.next().expect("first iter item"),
-                             age_quorum: *q_use_age_iter.next().expect("first iter item"),
-                             targetting: *at_type_iter.next().expect("first iter item"),
-                         }];
+            sim_type: tool,
+            num_initial: nodes_iter.next().expect("first iter item"),
+            num_attacking: at_nodes_iter.next().expect("first iter item"),
+            max_join: max_join_iter.next().expect("first iter item"),
+            add_good: add_good_iter.next().expect("first iter item"),
+            leave_good: leave_good_iter.next().expect("first iter item"),
+            min_group_size: group_size_iter.next().expect("first iter item"),
+            quorum_prop: quorum_iter.next().expect("first iter item"),
+            proof_time: proof_time_iter.next().expect("first iter item"),
+            max_days: max_days_iter.next().expect("first iter item"),
+            age_quorum: *q_use_age_iter.next().expect("first iter item"),
+            targetting: *at_type_iter.next().expect("first iter item"),
+        }];
 
         // TODO: check we're not going to cause out-of-memory here!
 
@@ -465,7 +484,8 @@ same time to complete proof-of-work.
             }
         }
 
-        let repetitions = matches.value_of("repetitions")
+        let repetitions = matches
+            .value_of("repetitions")
             .map(|s| s.parse().expect("parse"))
             .unwrap_or(100);
         (repetitions, v)
@@ -530,9 +550,10 @@ impl RelOrAbs<RR> {
 }
 
 impl<T: FromStr> FromStr for RelOrAbs<T>
-    where <T as FromStr>::Err: Debug
+where
+    <T as FromStr>::Err: Debug,
 {
-    type Err = ();  // we just panic!
+    type Err = (); // we just panic!
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.ends_with('%') {
             let mut s = s.to_string();
@@ -602,26 +623,26 @@ impl SimParams {
                     // note: FullSimTool is templated on quorum and attack strategy parameters, so
                     // we need to create the whole thing at once (not create parameters first)
                     match (self.age_quorum, self.targetting) {
-                        (false, AttackType::Untargetted) => {
-                            Box::new(FullSimTool::new(&args,
-                                                      SimpleQuorum::new(),
-                                                      UntargettedAttack {}))
-                        }
-                        (true, AttackType::Untargetted) => {
-                            Box::new(FullSimTool::new(&args,
-                                                      AgeQuorum::new(),
-                                                      UntargettedAttack {}))
-                        }
-                        (false, AttackType::SimpleTargetted) => {
-                            Box::new(FullSimTool::new(&args,
-                                                      SimpleQuorum::new(),
-                                                      SimpleTargettedAttack::new()))
-                        }
-                        (true, AttackType::SimpleTargetted) => {
-                            Box::new(FullSimTool::new(&args,
-                                                      AgeQuorum::new(),
-                                                      SimpleTargettedAttack::new()))
-                        }
+                        (false, AttackType::Untargetted) => Box::new(FullSimTool::new(
+                            &args,
+                            SimpleQuorum::new(),
+                            UntargettedAttack {},
+                        )),
+                        (true, AttackType::Untargetted) => Box::new(FullSimTool::new(
+                            &args,
+                            AgeQuorum::new(),
+                            UntargettedAttack {},
+                        )),
+                        (false, AttackType::SimpleTargetted) => Box::new(FullSimTool::new(
+                            &args,
+                            SimpleQuorum::new(),
+                            SimpleTargettedAttack::new(),
+                        )),
+                        (true, AttackType::SimpleTargetted) => Box::new(FullSimTool::new(
+                            &args,
+                            AgeQuorum::new(),
+                            SimpleTargettedAttack::new(),
+                        )),
                     }
                 }
             };

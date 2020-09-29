@@ -11,9 +11,8 @@
 
 use std::collections::HashMap;
 
+use node::{NodeData, NodeName};
 use {NN, RR};
-use node::{NodeName, NodeData};
-
 
 /// Describes the "quorum" algorithm
 pub trait Quorum {
@@ -110,8 +109,8 @@ impl Quorum for AgeQuorum {
                 good_age += data.age();
             }
         }
-        (n_good as RR) / n_nodes < self.proportion ||
-        (good_age as RR) / (sum_age as RR) < self.proportion
+        (n_good as RR) / n_nodes < self.proportion
+            || (good_age as RR) / (sum_age as RR) < self.proportion
     }
 
     fn quorum_compromised(&self, group: &HashMap<NodeName, NodeData>) -> bool {
@@ -126,7 +125,7 @@ impl Quorum for AgeQuorum {
                 bad_age += data.age();
             }
         }
-        (n_bad as RR) / n_nodes >= self.proportion &&
-        (bad_age as RR) / (sum_age as RR) >= self.proportion
+        (n_bad as RR) / n_nodes >= self.proportion
+            && (bad_age as RR) / (sum_age as RR) >= self.proportion
     }
 }

@@ -18,21 +18,20 @@ extern crate log;
 extern crate env_logger;
 extern crate rayon;
 
-mod prob;
-mod node;
-mod net;
 mod args;
+mod attack;
+mod net;
+mod node;
+mod prob;
 mod quorum;
 mod tools;
-mod attack;
 
 use std::cmp::max;
 
-use rayon::prelude::*;
 use rayon::par_iter::collect::collect_into;
+use rayon::prelude::*;
 
-use args::{ArgProc, SimParams, RelOrAbs};
-
+use args::{ArgProc, RelOrAbs, SimParams};
 
 // We could use templating but there's no reason not to do the easy thing and
 // fix types.
@@ -40,16 +39,18 @@ use args::{ArgProc, SimParams, RelOrAbs};
 pub type NN = u64;
 pub type RR = f64;
 
-pub const PARAM_TITLES: [&'static str; 10] = ["NInitial",
-                                              "NAttack",
-                                              "MaxJoin",
-                                              "BackJoin",
-                                              "PLeave",
-                                              "MinGroup",
-                                              "QuorumProp",
-                                              "MaxSteps",
-                                              "P(disruption)",
-                                              "P(compromise)"];
+pub const PARAM_TITLES: [&'static str; 10] = [
+    "NInitial",
+    "NAttack",
+    "MaxJoin",
+    "BackJoin",
+    "PLeave",
+    "MinGroup",
+    "QuorumProp",
+    "MaxSteps",
+    "P(disruption)",
+    "P(compromise)",
+];
 pub struct ToolArgs {
     // number initial
     num_initial: NN,
@@ -80,18 +81,20 @@ impl ToolArgs {
         // Convert from num/day to p/step:
         let add_good = params.add_good.from_base(nn as RR) / step_len;
         let p_leave = match params.leave_good {
-            RelOrAbs::Rel(r) => r * 0.01,   // number per 100
+            RelOrAbs::Rel(r) => r * 0.01, // number per 100
             RelOrAbs::Abs(a) => a,
         };
         let leave_good = p_leave / step_len;
         assert!(max_join > add_good);
         assert!(max_join > leave_good);
         if (nn as RR) / (max_join - leave_good) > 10000.0 {
-            warn!("Join rate ({} nodes/step) - leave rate ({} nodes/step) requires many steps \
+            warn!(
+                "Join rate ({} nodes/step) - leave rate ({} nodes/step) requires many steps \
                    for init (estimate: {})",
-                  max_join,
-                  leave_good,
-                  ((nn as RR) / (max_join - leave_good)).round() as NN);
+                max_join,
+                leave_good,
+                ((nn as RR) / (max_join - leave_good)).round() as NN
+            );
         }
 
         ToolArgs {
@@ -107,18 +110,23 @@ impl ToolArgs {
     }
 }
 
-
 fn main() {
     env_logger::init().unwrap();
 
     let (repetitions, param_sets) = ArgProc::make_sim_params();
     // TODO: print number of sims and/or progress
 
-    info!("Starting to simulate {} different parameter sets",
-          param_sets.len());
+    info!(
+        "Starting to simulate {} different parameter sets",
+        param_sets.len()
+    );
     let mut results = Vec::new();
-    collect_into(param_sets.into_par_iter().map(|item| item.result(repetitions)),
-                 &mut results);
+    collect_into(
+        param_sets
+            .into_par_iter()
+            .map(|item| item.result(repetitions)),
+        &mut results,
+    );
 
     //     tool.print_message();
     let col_widths: Vec<usize> = PARAM_TITLES.iter().map(|name| max(name.len(), 8)).collect();

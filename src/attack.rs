@@ -9,9 +9,8 @@
 
 // Attack strategies
 
-use node::{Prefix, NodeName, NodeData};
 use net::Network;
-
+use node::{NodeData, NodeName, Prefix};
 
 /// Determines a few things about how attacks work.
 ///
@@ -22,11 +21,13 @@ pub trait AttackStrategy {
     /// prefixes.
     ///
     /// Default implementation: do nothing.
-    fn on_split(&mut self,
-                _old_prefix: Prefix,
-                _new_prefix: Prefix,
-                _node_name: NodeName,
-                _node_data: &NodeData) {
+    fn on_split(
+        &mut self,
+        _old_prefix: Prefix,
+        _new_prefix: Prefix,
+        _node_name: NodeName,
+        _node_data: &NodeData,
+    ) {
     }
 
     /// Called when a malicious node is added or moved and told its new name. If moved, the method
@@ -36,12 +37,13 @@ pub trait AttackStrategy {
     /// Group prefix can be obtained via `net.find_prefix(name)`.
     ///
     /// Default implementation: return false (do not split).
-    fn reset_on_new_name(&mut self,
-                         _net: &Network,
-                         _old_name: Option<NodeName>,
-                         _new_name: NodeName,
-                         _node_data: &NodeData)
-                         -> bool {
+    fn reset_on_new_name(
+        &mut self,
+        _net: &Network,
+        _old_name: Option<NodeName>,
+        _new_name: NodeName,
+        _node_data: &NodeData,
+    ) -> bool {
         false
     }
 }
@@ -66,22 +68,25 @@ impl SimpleTargettedAttack {
 }
 
 impl AttackStrategy for SimpleTargettedAttack {
-    fn on_split(&mut self,
-                old_prefix: Prefix,
-                new_prefix: Prefix,
-                _node_name: NodeName,
-                _node_data: &NodeData) {
+    fn on_split(
+        &mut self,
+        old_prefix: Prefix,
+        new_prefix: Prefix,
+        _node_name: NodeName,
+        _node_data: &NodeData,
+    ) {
         if self.target == Some(old_prefix) {
             self.target = Some(new_prefix);
         }
     }
 
-    fn reset_on_new_name(&mut self,
-                         net: &Network,
-                         _old_name: Option<NodeName>,
-                         new_name: NodeName,
-                         _node_data: &NodeData)
-                         -> bool {
+    fn reset_on_new_name(
+        &mut self,
+        net: &Network,
+        _old_name: Option<NodeName>,
+        new_name: NodeName,
+        _node_data: &NodeData,
+    ) -> bool {
         let prefix = net.find_prefix(new_name);
         if let Some(target) = self.target {
             // reset any nodes not joining the target group

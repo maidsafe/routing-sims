@@ -16,15 +16,14 @@
 //! *   Node leaving and group merging are not simulated
 
 use std::cmp::Ordering;
-use std::mem;
+use std::fmt::{self, Binary, Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::fmt::{self, Formatter, Binary, Debug};
+use std::mem;
 use std::u64;
 
 use rand::{thread_rng, Rng};
 
 use NN;
-
 
 /// Name type (Xorable in routing library).
 trait NameT: Ord {
@@ -90,11 +89,14 @@ impl NameT for NN {
             self
         } else {
             let mask = !0 >> n;
-            if val { self | mask } else { self & !mask }
+            if val {
+                self | mask
+            } else {
+                self & !mask
+            }
         }
     }
 }
-
 
 // A group prefix, i.e. a sequence of bits specifying the part of the network's name space
 // consisting of all names that start with this sequence.
@@ -189,7 +191,6 @@ impl Debug for Prefix {
     }
 }
 
-
 /// Type of a node name
 pub type NodeName = u64;
 
@@ -201,7 +202,7 @@ pub fn new_node_name() -> NodeName {
 /// Data stored for a node
 #[derive(Clone, Copy)]
 pub struct NodeData {
-    age: u32, // initial age is 0
+    age: u32,    // initial age is 0
     churns: u32, // initial churns is 0
     is_malicious: bool,
 }
