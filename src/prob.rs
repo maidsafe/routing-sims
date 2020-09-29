@@ -13,7 +13,6 @@ use std::cmp::min;
 
 use {NN, RR};
 
-
 /// Calculate `n choose k`, i.e. `n! / (k! (n-k)!)`.
 pub fn choose(n: NN, mut k: NN) -> RR {
     assert!(n >= k);
@@ -47,10 +46,12 @@ pub fn prob_disruption(n: NN, r: NN, k: NN, q: NN) -> RR {
 pub fn prob_compromise(n: NN, r: NN, k: NN, q: NN) -> RR {
     assert!(n >= r, "expected n >= r; found n={}, r={}", n, r);
     assert!(k >= q, "expected k >= q; found k={}, q={}", k, q);
-    assert!(n - r >= k - q,
-            "expected n-r >= k-q; found n-r = {}, k-q = {}",
-            n - r,
-            k - q);
+    assert!(
+        n - r >= k - q,
+        "expected n-r >= k-q; found n-r = {}, k-q = {}",
+        n - r,
+        k - q
+    );
 
     // In this we consider each node from n/r distinct, and consider recruiting
     // k nodes into a set (so order doesn't matter).
@@ -59,7 +60,7 @@ pub fn prob_compromise(n: NN, r: NN, k: NN, q: NN) -> RR {
     let mut combs_compr: RR = 0 as RR;
     for x in q..(k + 1) {
         if x > r {
-            continue;   // impossible: 0 combinations to add
+            continue; // impossible: 0 combinations to add
         }
 
         // x is the number of red nodes that get picked; this is the number of

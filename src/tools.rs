@@ -8,16 +8,13 @@
 // Software.
 
 /// Drivers of the simulations / calculations
-
-
 use rayon::prelude::*;
 
-use {NN, RR, ToolArgs};
-use quorum::{Quorum, SimpleQuorum};
 use attack::{AttackStrategy, UntargettedAttack};
-use prob::{prob_disruption, prob_compromise};
 use net::{Network, NoAddRestriction, RestrictOnePerAge};
-
+use prob::{prob_compromise, prob_disruption};
+use quorum::{Quorum, SimpleQuorum};
+use {ToolArgs, NN, RR};
 
 /// First value is probability of disruption, second is probability of compromise.
 #[derive(Clone, Copy)]
@@ -31,7 +28,6 @@ impl SimResult {
     }
 }
 
-
 pub trait Tool {
     /// Print a message about the computation (does not include parameters).
     fn print_message(&self);
@@ -42,7 +38,6 @@ pub trait Tool {
     /// full sim.
     fn calc_p_compromise(&self, repetitions: u32) -> SimResult;
 }
-
 
 /// Simplest tool: assumes all groups have minimum size; cannot simulate
 /// targeting or ageing.
@@ -63,9 +58,11 @@ impl<'a> DirectCalcTool<'a> {
 
 impl<'a> Tool for DirectCalcTool<'a> {
     fn print_message(&self) {
-        println!("Tool: calculate probability of compromise, assuming all groups have minimum \
-                  size");
-        let any_group = true;   // only support this now
+        println!(
+            "Tool: calculate probability of compromise, assuming all groups have minimum \
+                  size"
+        );
+        let any_group = true; // only support this now
         if any_group {
             println!("Output: the probability that at least one group is compromised");
         } else {
@@ -80,20 +77,23 @@ impl<'a> Tool for DirectCalcTool<'a> {
         let pd = prob_disruption(n, self.args.num_attacking, k, q);
         let pc = prob_compromise(n, self.args.num_attacking, k, q);
 
-        trace!("n: {}, r: {}, k: {}, q: {}, pd: {:.e}, pc: {:.e}",
-               n,
-               self.args.num_attacking,
-               k,
-               q,
-               pd,
-               pc);
+        trace!(
+            "n: {}, r: {}, k: {}, q: {}, pd: {:.e}, pc: {:.e}",
+            n,
+            self.args.num_attacking,
+            k,
+            q,
+            pd,
+            pc
+        );
 
         let n_groups = (n as RR) / (self.args.min_group_size as RR);
-        SimResult(1.0 - (1.0 - pd).powf(n_groups),
-                  1.0 - (1.0 - pc).powf(n_groups))
+        SimResult(
+            1.0 - (1.0 - pd).powf(n_groups),
+            1.0 - (1.0 - pc).powf(n_groups),
+        )
     }
 }
-
 
 /// A tool which simulates the group structure (division of nodes in the
 /// network between groups), then does direct calculations based on these
@@ -118,9 +118,11 @@ impl<'a> SimStructureTool<'a> {
 
 impl<'a> Tool for SimStructureTool<'a> {
     fn print_message(&self) {
-        println!("Tool: simulate allocation of nodes to groups; each has size at least the \
-                  specified minimum size");
-        let any_group = true;   // only support this now
+        println!(
+            "Tool: simulate allocation of nodes to groups; each has size at least the \
+                  specified minimum size"
+        );
+        let any_group = true; // only support this now
         if any_group {
             println!("Output: the probability that at least one group is compromised");
         } else {
@@ -163,7 +165,6 @@ impl<'a> Tool for SimStructureTool<'a> {
         SimResult(1.0 - p_no_disruption, 1.0 - p_no_compromise)
     }
 }
-
 
 /// A tool which simulates group operations.
 ///
@@ -233,12 +234,13 @@ impl<'a, Q: Quorum, A: AttackStrategy + Clone> FullSimTool<'a, Q, A> {
 }
 
 impl<'a, Q: Quorum, A: AttackStrategy + Clone> Tool for FullSimTool<'a, Q, A>
-    where Q: Sync,
-          A: Sync
+where
+    Q: Sync,
+    A: Sync,
 {
     fn print_message(&self) {
         println!("Tool: simulate group operations");
-        let any_group = true;   // only support this now
+        let any_group = true; // only support this now
         if any_group {
             println!("Output: the probability that at least one group is compromised");
         } else {
@@ -250,8 +252,10 @@ impl<'a, Q: Quorum, A: AttackStrategy + Clone> Tool for FullSimTool<'a, Q, A>
         let result = (0..repetitions)
             .into_par_iter()
             .map(|_| self.run_sim())
-            .reduce(|| SimResult(0.0, 0.0),
-                    |v1, v2| SimResult(v1.0 + v2.0, v1.1 + v2.1));
+            .reduce(
+                || SimResult(0.0, 0.0),
+                |v1, v2| SimResult(v1.0 + v2.0, v1.1 + v2.1),
+            );
 
         let denom = repetitions as RR;
         SimResult(result.0 / denom, result.1 / denom)
