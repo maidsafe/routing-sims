@@ -1,7 +1,7 @@
 [package]
 authors = [ "Diggory Hardy <git@dhardy.name>" ]
 name = "sn_routing_sims"
-version = "0.1.3"
+version = "0.1.4"
 
 [dependencies]
 clap = "2.18.0"
